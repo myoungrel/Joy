@@ -1,0 +1,52 @@
+/* ==========================================
+   CSS Variables & Design System
+   ========================================== */
+:root {
+    /* Colors */
+    --color-primary: hsl(250, 70%, 60%);
+    --color-primary-light: hsl(250, 70%, 70%);
+    --color-primary-dark: hsl(250, 70%, 50%);
+    --color-secondary: hsl(180, 65%, 55%);
+    --color-accent: hsl(25, 85%, 60%);
+    --color-bg-dark: hsl(230, 25%, 10%);
+    --color-bg-darker: hsl(230, 25%, 8%);
+    --color-surface: hsl(230, 20%, 15%);
+    --color-surface-light: hsl(230, 15%, 20%);
+    --color-text: hsl(0, 0%, 95%);
+    --color-text-muted: hsl(0, 0%, 70%);
+    --color-border: hsl(230, 15%, 25%);
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    --gradient-accent: linear-gradient(135deg, var(--color-accent) 0%, hsl(340, 85%, 60%) 100%);
+    --gradient-bg: linear-gradient(180deg, var(--color-bg-dark) 0%, var(--color-bg-darker) 100%);
+    
+    /* Spacing */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+    --spacing-2xl: 4rem;
+    
+    /* Border Radius */
+    --radius-sm: 0.5rem;
+    --radius-md: 1rem;
+    --radius-lg: 1.5rem;
+    --radius-full: 9999px;
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --shadow-glow: 0 0 20px rgba(138, 92, 246, 0.3);
+    
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-base: 250ms ease;
+    --transition-slow: 400ms ease;
+    
+    /* Typography */
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+}

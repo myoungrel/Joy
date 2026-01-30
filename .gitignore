@@ -1,0 +1,17 @@
+# Local Dependencies (Do NOT upload to Git)
+joy_libs/
+__pycache__/
+*.pyc
+
+# System Artifacts
+joy_log.txt
+crash_log.txt
+debug_menu.txt
+
+# VS Code / Editor
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+Desktop.ini
