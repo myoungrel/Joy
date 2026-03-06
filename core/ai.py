@@ -134,7 +134,7 @@ class AIWorker(QThread):
                     return names[0] # Fallback to first available
         except:
             pass
-        return self.model # Return default if fetch fails
+        return self.default_model # Return default if fetch fails
 
     def check_rules(self, text):
         # Fallback/Fast rules

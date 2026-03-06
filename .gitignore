@@ -1,5 +1,6 @@
 # Local Dependencies (Do NOT upload to Git)
 joy_libs/
+.venv/
 __pycache__/
 *.pyc
 

@@ -15,11 +15,12 @@ try:
     from core.context import get_active_window_title
     from core.vision import capture_active_window_base64
 except ImportError:
-    pass # Add manual handling later if needed
     class AIWorker(QThread):
         response_ready = pyqtSignal(str)
         def __init__(self, *args, **kwargs): super().__init__()
         def run(self): self.response_ready.emit("AI Core Module Missing! (Check dependencies)")
+    def get_active_window_title(): return ""
+    def capture_active_window_base64(): return None
 
 class JoyWidget(QWidget):
     def __init__(self):
@@ -75,7 +76,7 @@ class JoyWidget(QWidget):
         self.anim_timer = QTimer(self)
         self.anim_timer.timeout.connect(self.breathing_animation)
         self.anim_timer.start(50)
-        self.anim_step = 0
+        self.anim_step = 0.0
         
         # Speaking Animation Timer (Revert to idle)
         self.speaking_timer = QTimer(self)
