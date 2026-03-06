@@ -2,7 +2,7 @@ import sys
 import os
 import math
 import traceback
-from PyQt6.QtWidgets import QWidget, QLabel, QApplication, QMenu, QSystemTrayIcon
+from PyQt6.QtWidgets import QWidget, QLabel, QApplication, QMenu, QSystemTrayIcon, QFileDialog, QMessageBox
 from PyQt6.QtCore import Qt, QPoint, QTimer, QThread, pyqtSignal, QSize
 from PyQt6.QtGui import QPixmap, QAction, QIcon, QPainter, QCursor, QRegion, QBitmap, QColor, QPainterPath, QImage
 
@@ -30,10 +30,12 @@ class JoyWidget(QWidget):
         self.offset = QPoint()
         self.follow_mouse = False
         self.auto_vision_mode = False # Default: Off
+        self.rag_mode = True # Default: On
         self.setWindowTitle("Joy Assistant")
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        
+        self.setAcceptDrops(True) # Accept drag & drop for RAG indexing
+
         # Start Context Tracker
         self.start_context_tracking()
         
@@ -167,10 +169,27 @@ class JoyWidget(QWidget):
             auto_vision_action.setChecked(getattr(self, 'auto_vision_mode', False))
             auto_vision_action.triggered.connect(self.toggle_auto_vision)
             menu.addAction(auto_vision_action)
+
+            menu.addSeparator()
+
+            # 2. RAG (Knowledge Base) Features
+            rag_toggle_action = QAction("📚 내 지식 기반 답변 모드 (RAG)", self)
+            rag_toggle_action.setCheckable(True)
+            rag_toggle_action.setChecked(getattr(self, 'rag_mode', True))
+            rag_toggle_action.triggered.connect(self.toggle_rag_mode)
+            menu.addAction(rag_toggle_action)
+
+            load_doc_action = QAction("📂 지식 DB에 파일 추가 (PDF/TXT 등)", self)
+            load_doc_action.triggered.connect(self.load_document_dialog)
+            menu.addAction(load_doc_action)
+
+            clear_db_action = QAction("🗑️ 지식 DB 초기화", self)
+            clear_db_action.triggered.connect(self.clear_knowledge_base)
+            menu.addAction(clear_db_action)
             
             menu.addSeparator()
             
-            # 2. Utility Features
+            # 3. Utility Features
             reset_action = QAction("원위치로 이동", self)
             reset_action.triggered.connect(self.reset_position)
             menu.addAction(reset_action)
@@ -297,6 +316,68 @@ class JoyWidget(QWidget):
         
         self.chat_bubble.move(x, y)
 
+    # Drag and Drop Events for RAG
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        files = [u.toLocalFile() for u in event.mimeData().urls()]
+        for file in files:
+            self.index_document(file)
+
+    def load_document_dialog(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "지식 DB에 추가할 문서 선택", "", "문서 파일 (*.pdf *.txt *.md *.csv)"
+        )
+        if file_path:
+            self.index_document(file_path)
+
+    def index_document(self, file_path):
+        self.show_chat_bubble()
+        self.chat_bubble.add_message(f"'{os.path.basename(file_path)}' 문서를 학습하고 있어요! 잠시만 기다려주세요... ⏳", is_user=False)
+        self.set_state('thinking')
+        
+        # Offload to a background thread to avoid freezing GUI
+        class IndexWorker(QThread):
+            finished = pyqtSignal(bool, str)
+            def __init__(self, path):
+                super().__init__()
+                self.path = path
+            def run(self):
+                try:
+                    from core.rag_engine import RAGEngine
+                    rag = RAGEngine()
+                    success, msg = rag.load_and_index_document(self.path)
+                    self.finished.emit(success, msg)
+                except Exception as e:
+                    self.finished.emit(False, str(e))
+                    
+        self.idx_worker = IndexWorker(file_path)
+        self.idx_worker.finished.connect(self.on_indexing_finished)
+        self.idx_worker.start()
+
+    def on_indexing_finished(self, success, msg):
+        self.set_state('idle')
+        if success:
+            self.chat_bubble.add_message(f"학습 완료! ✅\n({msg})", is_user=False)
+        else:
+            self.chat_bubble.add_message(f"학습 실패! ❌\n({msg})", is_user=False)
+
+    def clear_knowledge_base(self):
+        reply = QMessageBox.question(self, '지식 DB 초기화', '정말 모든 문서를 지울까요?', QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
+            from core.rag_engine import RAGEngine
+            rag = RAGEngine()
+            success, msg = rag.clear_database()
+            self.show_chat_bubble()
+            self.chat_bubble.add_message(msg, is_user=False)
+            
+    def toggle_rag_mode(self, checked):
+        self.rag_mode = checked
+
 
     # Context Tracking
     def start_context_tracking(self):
@@ -362,6 +443,14 @@ class JoyWidget(QWidget):
         
         # Create worker
         self.worker = AIWorker(user_text, context_info=context, image_data=image_data)
+        
+        # Pass RAG preference to worker
+        if not getattr(self, 'rag_mode', True):
+            # If RAG is disabled via menu, we can override or just let RAG return empty
+            # For simplicity, we can temporarily disable the RAG engine lookup inside worker
+            self.worker.rag.retrieve_context = lambda q, k: ""
+            print("DEBUG: RAG Mode is OFF.")
+            
         self.worker.response_ready.connect(self.on_ai_response)
         self.worker.start()
         
