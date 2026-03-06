@@ -15,7 +15,7 @@ class AIWorker(QThread):
         self.image_data = image_data # Base64 string
         self.api_url = "http://localhost:11434/api/generate"
         self.tags_url = "http://localhost:11434/api/tags"
-        self.default_model = "llama3"
+        self.default_model = "gemma2"
         self.vision_model = "llava" # Or moondream
         
         # Initialize RAG Engine
