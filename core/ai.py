@@ -3,6 +3,7 @@ import requests
 import json
 import time
 from PyQt6.QtCore import QThread, pyqtSignal
+from core.rag_engine import RAGEngine
 
 class AIWorker(QThread):
     response_ready = pyqtSignal(str)
@@ -16,6 +17,9 @@ class AIWorker(QThread):
         self.tags_url = "http://localhost:11434/api/tags"
         self.default_model = "llama3"
         self.vision_model = "llava" # Or moondream
+        
+        # Initialize RAG Engine
+        self.rag = RAGEngine()
 
     def run(self):
         try:
@@ -31,9 +35,14 @@ class AIWorker(QThread):
             self.response_ready.emit(f"AI Error: {str(e)}")
 
     def process_vision_request(self):
-        # Vision Request
-        final_prompt = f"User has shared their screen. Context: {self.context_info}. User Question: {self.user_text}. \nAnalyze the image and answer the user's question accurately. \nCRITICAL INSTRUCTIONS:\n1. Answer ONLY what is asked. Do NOT explain what the screen shows unless asked.\n2. Do NOT define terms (e.g., don't explain what Chrome or a Portfolio is).\n3. MUST answer in KOREAN (한국어)."
+        # Vision + RAG Hybrid Request
+        rag_context = self.rag.retrieve_context(self.user_text, k=2)
         
+        if rag_context:
+            final_prompt = f"User has shared their screen. Screen Context: {self.context_info}.\n[User's Personal Database Context:\n{rag_context}]\nUser Question: {self.user_text}. \nAnalyze the image and the provided database context to answer the user's question accurately. \nCRITICAL INSTRUCTIONS:\n1. Answer ONLY what is asked. Do NOT explain what the screen shows unless asked.\n2. Do NOT define terms (e.g., don't explain what Chrome or a Portfolio is).\n3. MUST answer in KOREAN (한국어)."
+        else:
+            final_prompt = f"User has shared their screen. Context: {self.context_info}. User Question: {self.user_text}. \nAnalyze the image and answer the user's question accurately. \nCRITICAL INSTRUCTIONS:\n1. Answer ONLY what is asked. Do NOT explain what the screen shows unless asked.\n2. Do NOT define terms (e.g., don't explain what Chrome or a Portfolio is).\n3. MUST answer in KOREAN (한국어)."
+            
         payload = {
             "model": self.vision_model,
             "prompt": final_prompt,
@@ -55,8 +64,18 @@ class AIWorker(QThread):
             "3. MUST answer in KOREAN (한국어)."
         )
         
+        # Retrieve RAG context if any
+        rag_context = self.rag.retrieve_context(self.user_text, k=3)
+        
+        context_parts = []
         if self.context_info:
-            final_prompt = f"{system_instruction}\n[Context: User is currently working on: '{self.context_info}']\nUser: {self.user_text}"
+             context_parts.append(f"User is currently working on: '{self.context_info}'")
+        if rag_context:
+             context_parts.append(f"User's Personal Database Context:\n{rag_context}")
+             
+        if context_parts:
+            combined_context = "\n".join(context_parts)
+            final_prompt = f"{system_instruction}\n[Context:\n{combined_context}]\nUser: {self.user_text}"
         else:
             final_prompt = f"{system_instruction}\nUser: {self.user_text}"
             
