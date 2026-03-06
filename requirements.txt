@@ -4,7 +4,6 @@ langchain-chroma
 langchain-ollama
 chromadb
 pypdf
-sentence-transformers
 requests
 PyQt6
 pillow

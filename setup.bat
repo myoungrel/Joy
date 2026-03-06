@@ -5,25 +5,25 @@ echo [Joy AI Setup] Initializing Local Environment...
 REM 1. Set paths
 set "PYTHON_DIR=C:\IT\python310"
 set "PYTHON_EXE=%PYTHON_DIR%\python.exe"
-set "LOCAL_LIB=joy_libs"
+set "VENV_DIR=.venv"
 
-REM 2. Always check/update dependencies
-REM (Pip will skip if already satisfied, so this is safe and fast)
-
-REM 3. Create local lib folder
-if not exist "%LOCAL_LIB%" mkdir "%LOCAL_LIB%"
-
-echo [Joy AI Setup] Installing dependencies locally to '%LOCAL_LIB%'...
-echo (This avoids touching your system files)
-
- REM Install pip script if missing
-if not exist get-pip.py (
-    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+REM 2. Check Python exists
+if not exist "%PYTHON_EXE%" (
+    echo [ERROR] Python not found at %PYTHON_EXE%
+    echo Please install Python 3.10 from https://www.python.org/
+    pause
+    exit /b 1
 )
 
-REM Install main dependencies from requirements.txt
-"%PYTHON_EXE%" get-pip.py
-"%PYTHON_EXE%" -m pip install -r requirements.txt --target "%LOCAL_LIB%"
+REM 3. Create venv if not exists
+if not exist "%VENV_DIR%\Scripts\python.exe" (
+    echo [Joy AI Setup] Creating virtual environment...
+    "%PYTHON_EXE%" -m venv %VENV_DIR%
+)
+
+REM 4. Install dependencies
+echo [Joy AI Setup] Installing dependencies...
+%VENV_DIR%\Scripts\pip.exe install -r requirements.txt
 
 if %errorlevel% neq 0 (
     echo [ERROR] Installation failed.
@@ -31,26 +31,11 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-goto :LAUNCH
-
-:ERROR
-    echo [ERROR] Installation failed.
-    pause
-    exit /b 1
-)
-
-:LAUNCH
 echo.
 echo [Joy AI Setup] Launching Joy...
 
-REM 4. Run the app with PYTHONPATH set to local lib
-set "PYTHONPATH=%CD%\%LOCAL_LIB%"
-set "PYTHONW_EXE=%PYTHON_DIR%\pythonw.exe"
-if exist "%PYTHONW_EXE%" (
-    start "" "%PYTHONW_EXE%" main.py
-) else (
-    start "" "%PYTHON_EXE%" main.py
-)
+REM 5. Run the app using venv python
+start "" "%VENV_DIR%\Scripts\pythonw.exe" main.py
 
 REM Close the window automatically after 3 seconds
 timeout /t 3 >nul
