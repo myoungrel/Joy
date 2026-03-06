@@ -35,10 +35,24 @@ def test_rag():
 
         # Clean up
         import shutil
+        import time
+
         if os.path.exists(test_file):
             os.remove(test_file)
+
+        # ChromaDB may lock files, force garbage collection to release handles
+        del rag
+        import gc
+        gc.collect()
+        
+        # Add a short delay to ensure OS releases file locks
+        time.sleep(1)
+
         if os.path.exists("test_chroma_db"):
-            shutil.rmtree("test_chroma_db")
+            try:
+                shutil.rmtree("test_chroma_db")
+            except Exception as e:
+                print(f"Cleanup warning (non-fatal): Could not delete test_chroma_db: {e}")
             
     except Exception as e:
         print(f"Initialization or general error: {e}")

@@ -21,9 +21,9 @@ if not exist get-pip.py (
     curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 )
 
-REM Install main dependencies (removed pyautogui to fix build errors)
-REM Pillow has built-in ImageGrab which works fine on Windows
-"%PYTHON_EXE%" get-pip.py --target "%LOCAL_LIB%" PyQt6 requests pillow
+REM Install main dependencies from requirements.txt
+"%PYTHON_EXE%" get-pip.py
+"%PYTHON_EXE%" -m pip install -r requirements.txt --target "%LOCAL_LIB%"
 
 if %errorlevel% neq 0 (
     echo [ERROR] Installation failed.
