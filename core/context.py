@@ -6,6 +6,7 @@ def get_active_window_title():
     Returns the title of the currently active window on Windows.
     Returns None if it fails.
     """
+    try:
         import ctypes
         from ctypes import wintypes
         
